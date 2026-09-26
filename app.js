@@ -1,22 +1,25 @@
-﻿require('dotenv').config();
-const express      = require('express');
-const mongoose     = require('mongoose');
-const session      = require('express-session');
-const MongoStore   = require('connect-mongo').default;
-const flash        = require('express-flash');
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const session = require('express-session');
+const MongoStore = require('connect-mongo').default;
+const flash = require('express-flash');
 const methodOverride = require('method-override');
-const path         = require('path');
-const cors         = require('cors');
+const path = require('path');
+const cors = require('cors');
 
 // Import all routes
-const indexRoutes  = require('./routes/indexRoutes');
-const authRoutes   = require('./routes/authRoutes');
-const adminRoutes  = require('./routes/adminRoutes');
-const mseRoutes    = require('./routes/mseRoutes');
-const apiRoutes    = require('./routes/apiRoutes');   // ← NEW mobile API
+const indexRoutes = require('./routes/indexRoutes');
+const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const mseRoutes = require('./routes/mseRoutes');
+const apiRoutes = require('./routes/apiRoutes');   // ← NEW mobile API
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ── Trust proxy (required for secure cookies behind Render/Heroku etc.) ───
+app.set('trust proxy', 1);
 
 // ── CORS (required for Flutter mobile client) ─────────────────────────────
 app.use(cors({
@@ -57,9 +60,9 @@ app.use(session({
 // ── Flash messages ────────────────────────────────────────────────────────
 app.use(flash());
 app.use((req, res, next) => {
-  res.locals.user        = req.session.user || null;
+  res.locals.user = req.session.user || null;
   res.locals.success_msg = req.flash('success');
-  res.locals.error_msg   = req.flash('error');
+  res.locals.error_msg = req.flash('error');
   next();
 });
 
@@ -67,10 +70,10 @@ app.use((req, res, next) => {
 app.use('/api', apiRoutes);
 
 // ── EJS Web routes (unchanged) ────────────────────────────────────────────
-app.use('/',      indexRoutes);
-app.use('/auth',  authRoutes);
+app.use('/', indexRoutes);
+app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes);
-app.use('/mse',   mseRoutes);
+app.use('/mse', mseRoutes);
 
 // ── Health check ──────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
@@ -84,7 +87,7 @@ app.use((req, res) => {
 // ── Connect and start ─────────────────────────────────────────────────────
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mse_platform')
   .then(() => {
-    console.log('MongoDB connected');
+    console.log(`MongoDB connected ${process.env.MONGODB_URI}`);
     app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
   })
   .catch(err => {
