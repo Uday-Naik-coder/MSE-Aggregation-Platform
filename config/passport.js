@@ -18,7 +18,7 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// Local Search Strategy
+// Local Strategy (email + password)
 passport.use(new LocalStrategy(
   { usernameField: 'email' },
   async (email, password, done) => {
@@ -41,41 +41,43 @@ passport.use(new LocalStrategy(
   }
 ));
 
-
 // Google OAuth Strategy
 passport.use(new GoogleStrategy(
   {
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/auth/google/callback',
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-
+      // Check by Google ID
       let user = await User.findOne({ googleId: profile.id });
-
-      if (user) return done(null, user);
-
-      user = await User.findOne({ email: profile.emails[0].value });
-
       if (user) {
-        user.googleId = profile.id;
-        user.avatar = profile.photos[0]?.value || '';
+        // Ensure role exists (if old user)
+        if (!user.role) user.role = 'seller';
         await user.save();
         return done(null, user);
       }
-
+      // Check by email (existing local user)
+      user = await User.findOne({ email: profile.emails[0].value.toLowerCase() });
+      if (user) {
+        user.googleId = profile.id;
+        user.avatar = profile.photos[0]?.value || '';
+        if (!user.role) user.role = 'seller';
+        await user.save();
+        return done(null, user);
+      }
+      // Create new user
       user = await User.create({
         googleId: profile.id,
         name: profile.displayName,
-        email: profile.emails[0].value,
-        avatar: profile.photos[0]?.value || ''
+        email: profile.emails[0].value.toLowerCase(),
+        avatar: profile.photos[0]?.value || '',
+        role: 'seller'   // default role for Google signups
       });
-
       return done(null, user);
-
     } catch (err) {
-      return done(err);
+      return done(err, null, { message: 'Google authentication failed.' });
     }
   }
 ));
