@@ -46,12 +46,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # 6. Trigger Render deploy (pulls the new :latest image)
-      - name: Trigger Render Deploy
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
-        run: curl -s "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
 
-      # 7. Print summary
+      # 6. Print summary
       - name: Summary
         run: |
           echo "✅ Image pushed:"
