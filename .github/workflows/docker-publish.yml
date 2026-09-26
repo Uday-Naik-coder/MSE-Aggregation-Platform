@@ -1,5 +1,5 @@
-name: Build and Push Docker Image
-  
+name: Build, Push, and Deploy
+
 on:
   push:
     branches:
@@ -46,10 +46,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # 6. Print summary
-      - name: Image pushed summary
+      # 6. Trigger Render deploy (pulls the new :latest image)
+      - name: Trigger Render Deploy
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+        run: curl -s "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+      # 7. Print summary
+      - name: Summary
         run: |
-          echo "✅ Image pushed successfully!"
-          echo "   Tags:"
-          echo "     - ${{ env.DOCKER_IMAGE }}:latest"
-          echo "     - ${{ env.DOCKER_IMAGE }}:${{ steps.vars.outputs.sha_short }}"
+          echo "✅ Image pushed:"
+          echo "     ${{ env.DOCKER_IMAGE }}:latest"
+          echo "     ${{ env.DOCKER_IMAGE }}:${{ steps.vars.outputs.sha_short }}"
